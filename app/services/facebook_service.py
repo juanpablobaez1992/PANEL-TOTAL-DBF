@@ -28,23 +28,23 @@ async def publicar_en_facebook(
 ) -> dict[str, str | bool | None]:
     """Publica contenido en una página de Facebook."""
 
-    if not settings.meta_page_id or not settings.meta_access_token:
+    if not settings.resolved_meta_page_id or not settings.resolved_meta_access_token:
         return build_result(exito=False, error="Facebook requiere META_PAGE_ID y META_ACCESS_TOKEN.")
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             if imagen_path:
                 files = {"source": (Path(imagen_path).name, Path(imagen_path).read_bytes(), "image/jpeg")}
-                data = {"caption": contenido, "access_token": settings.meta_access_token}
+                data = {"caption": contenido, "access_token": settings.resolved_meta_access_token}
                 response = await client.post(
-                    _graph_url(f"{settings.meta_page_id}/photos"),
+                    _graph_url(f"{settings.resolved_meta_page_id}/photos"),
                     data=data,
                     files=files,
                 )
             else:
                 response = await client.post(
-                    _graph_url(f"{settings.meta_page_id}/feed"),
-                    data={"message": contenido, "access_token": settings.meta_access_token},
+                    _graph_url(f"{settings.resolved_meta_page_id}/feed"),
+                    data={"message": contenido, "access_token": settings.resolved_meta_access_token},
                 )
             response.raise_for_status()
             payload = response.json()
@@ -63,7 +63,7 @@ async def publicar_en_instagram(
 ) -> dict[str, str | bool | None]:
     """Publica una imagen en Instagram mediante media container + media_publish."""
 
-    if not settings.meta_ig_account_id or not settings.meta_access_token:
+    if not settings.resolved_meta_ig_account_id or not settings.resolved_meta_access_token:
         return build_result(
             exito=False,
             error="Instagram requiere META_IG_ACCOUNT_ID y META_ACCESS_TOKEN.",
@@ -82,11 +82,11 @@ async def publicar_en_instagram(
     try:
         async with httpx.AsyncClient(timeout=90) as client:
             create_response = await client.post(
-                _graph_url(f"{settings.meta_ig_account_id}/media"),
+                _graph_url(f"{settings.resolved_meta_ig_account_id}/media"),
                 data={
                     "image_url": image_url,
                     "caption": contenido,
-                    "access_token": settings.meta_access_token,
+                    "access_token": settings.resolved_meta_access_token,
                 },
             )
             create_response.raise_for_status()
@@ -95,10 +95,10 @@ async def publicar_en_instagram(
                 return build_result(exito=False, error="Instagram no devolvió creation_id.")
 
             publish_response = await client.post(
-                _graph_url(f"{settings.meta_ig_account_id}/media_publish"),
+                _graph_url(f"{settings.resolved_meta_ig_account_id}/media_publish"),
                 data={
                     "creation_id": creation_id,
-                    "access_token": settings.meta_access_token,
+                    "access_token": settings.resolved_meta_access_token,
                 },
             )
             publish_response.raise_for_status()
@@ -110,7 +110,7 @@ async def publicar_en_instagram(
                 _graph_url(str(media_id)),
                 params={
                     "fields": "id,permalink",
-                    "access_token": settings.meta_access_token,
+                    "access_token": settings.resolved_meta_access_token,
                 },
             )
             permalink_response.raise_for_status()

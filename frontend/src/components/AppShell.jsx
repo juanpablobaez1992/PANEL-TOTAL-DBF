@@ -25,6 +25,16 @@ export function AppShell() {
                 Noticias
               </NavLink>
               {isAdmin ? (
+                <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/automation">
+                  Automation
+                </NavLink>
+              ) : null}
+              {isAdmin ? (
+                <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/canales">
+                  Canales
+                </NavLink>
+              ) : null}
+              {isAdmin ? (
                 <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/usuarios">
                   Usuarios
                 </NavLink>

@@ -3,7 +3,9 @@ import "./App.css";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { AutomationPage } from "./pages/AutomationPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { CanalesPage } from "./pages/CanalesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewsPage } from "./pages/NewsPage";
 import { SessionsPage } from "./pages/SessionsPage";
@@ -30,6 +32,22 @@ export default function App() {
           <Route element={<DashboardPage />} path="/" />
           <Route element={<DashboardPage />} path="/dashboard" />
           <Route element={<NewsPage />} path="/noticias/:id?" />
+          <Route
+            element={
+              <AdminOnly>
+                <AutomationPage />
+              </AdminOnly>
+            }
+            path="/automation"
+          />
+          <Route
+            element={
+              <AdminOnly>
+                <CanalesPage />
+              </AdminOnly>
+            }
+            path="/canales"
+          />
           <Route
             element={
               <AdminOnly>

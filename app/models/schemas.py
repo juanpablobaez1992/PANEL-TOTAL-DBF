@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -426,6 +426,174 @@ class QuickPublishResult(BaseModel):
 
     noticia: NoticiaRead
     publicaciones: list[PublicacionRead]
+
+
+class AutomationKpis(BaseModel):
+    """KPIs resumidos del modulo AUTOPUBLICATE."""
+
+    total_ejecuciones: int
+    exitos_fb: int
+    exitos_ig: int
+    posts_regulares: int
+    posts_evergreen: int
+
+
+class AutomationLogRead(BaseModel):
+    """Registro visible de una ejecucion del bot."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    post_id: int | None
+    title: str
+    is_evergreen: bool
+    fb_success: bool
+    ig_success: bool
+    error_msg: str
+
+
+class AutomationSchedulerState(BaseModel):
+    """Estado operativo del scheduler de automation."""
+
+    regular_enabled: bool
+    regular_interval_minutes: int
+    regular_next_run_at: datetime | None
+    evergreen_enabled: bool
+    evergreen_interval_minutes: int
+    evergreen_next_run_at: datetime | None
+    last_processed_post_id: int
+
+
+class AutomationDashboardRead(BaseModel):
+    """Respuesta principal del dashboard automation."""
+
+    kpis: AutomationKpis
+    recent_logs: list[AutomationLogRead]
+    scheduler: AutomationSchedulerState
+    integrations: list[IntegracionStatus]
+    queue_count: int
+    accounts_count: int
+    rules_count: int
+
+
+class AutomationQueueItem(BaseModel):
+    """Post pendiente en la cola de WordPress."""
+
+    id: int
+    title: str
+    excerpt: str
+    link: str
+    image_url: str | None = None
+    image_urls: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+
+
+class AutomationPreparedPost(BaseModel):
+    """Vista previa preparada para publicar."""
+
+    post_id: int
+    title: str
+    excerpt: str
+    link: str
+    image_url: str | None = None
+    image_urls: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    utm_link: str
+    fb_copy: str
+    ig_copy: str
+    is_evergreen: bool = False
+
+
+class AutomationPreparedPublishPayload(BaseModel):
+    """Payload editable para publicar una vista previa preparada."""
+
+    post_id: int
+    title: str
+    image_url: str | None = None
+    image_urls: list[str] = Field(default_factory=list)
+    utm_link: str
+    fb_copy: str
+    ig_copy: str
+    is_evergreen: bool = False
+
+
+class AutomationRunResult(BaseModel):
+    """Resultado resumido de una ejecucion manual."""
+
+    message: str
+    log: AutomationLogRead
+
+
+class AutomationAccountCreate(BaseModel):
+    """Alta de cuenta extra de Facebook o Instagram."""
+
+    name: str = Field(min_length=2, max_length=120)
+    platform: Literal["facebook", "instagram"]
+    page_id: str = Field(min_length=2, max_length=120)
+    access_token: str = Field(min_length=5)
+
+
+class AutomationAccountRead(BaseModel):
+    """Cuenta visible en UI sin exponer el token."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    platform: str
+    page_id: str
+    token_hint: str
+    created_at: datetime
+
+
+class AutomationRuleCreate(BaseModel):
+    """Alta o actualizacion de regla IA por categoria."""
+
+    category_slug: str = Field(min_length=1, max_length=120)
+    prompt_rule: str = Field(min_length=3)
+
+
+class AutomationRuleRead(BaseModel):
+    """Regla IA persistida."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    category_slug: str
+    prompt_rule: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class AutomationWordPressCategory(BaseModel):
+    """Categoria de WordPress para settings evergreen."""
+
+    id: int
+    name: str
+    slug: str
+
+
+class AutomationEvergreenSettingsRead(BaseModel):
+    """Settings evergreen visibles desde UI."""
+
+    category_ids: list[int]
+    categories: list[AutomationWordPressCategory]
+
+
+class AutomationEvergreenSettingsUpdate(BaseModel):
+    """Payload para guardar categorias evergreen."""
+
+    category_ids: list[int] = Field(default_factory=list)
+
+
+class AutomationSchedulerUpdate(BaseModel):
+    """Payload para ajustar el scheduler de automation."""
+
+    regular_enabled: bool | None = None
+    regular_interval_minutes: int | None = Field(default=None, ge=5, le=1440)
+    evergreen_enabled: bool | None = None
+    evergreen_interval_minutes: int | None = Field(default=None, ge=15, le=10080)
 
 
 AuthTokenResponse.model_rebuild()

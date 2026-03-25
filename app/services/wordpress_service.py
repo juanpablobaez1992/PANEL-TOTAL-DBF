@@ -27,7 +27,7 @@ async def publicar_en_wordpress(
 ) -> dict[str, str | bool | None]:
     """Publica una entrada en WordPress."""
 
-    if not settings.wp_url or not settings.wp_user or not settings.wp_app_password:
+    if not settings.resolved_wp_url or not settings.wp_user or not settings.wp_app_password:
         return build_result(exito=False, error="WordPress requiere WP_URL, WP_USER y WP_APP_PASSWORD.")
 
     headers = _auth_header()
@@ -41,7 +41,7 @@ async def publicar_en_wordpress(
                     "Content-Type": "image/jpeg",
                 }
                 media_response = await client.post(
-                    f"{settings.wp_url.rstrip('/')}/wp-json/wp/v2/media",
+                    f"{settings.resolved_wp_url.rstrip('/')}/wp-json/wp/v2/media",
                     headers=media_headers,
                     content=Path(imagen_path).read_bytes(),
                 )
@@ -57,7 +57,7 @@ async def publicar_en_wordpress(
                 payload["featured_media"] = media_id
 
             response = await client.post(
-                f"{settings.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
+                f"{settings.resolved_wp_url.rstrip('/')}/wp-json/wp/v2/posts",
                 headers=headers,
                 json=payload,
             )

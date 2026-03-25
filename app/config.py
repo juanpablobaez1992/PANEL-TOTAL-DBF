@@ -9,6 +9,29 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _read_env_file(path: Path) -> dict[str, str]:
+    """Lee un archivo .env simple y devuelve sus pares clave/valor."""
+
+    if not path.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+@lru_cache(maxsize=1)
+def _legacy_env_values() -> dict[str, str]:
+    """Carga valores legacy desde AUTOPUBLICATE/.env si existe."""
+
+    return _read_env_file(Path("AUTOPUBLICATE/.env"))
+
+
 class Settings(BaseSettings):
     """Settings globales leídos desde variables de entorno."""
 
@@ -49,6 +72,46 @@ class Settings(BaseSettings):
     auto_publish_global: bool = Field(default=False, alias="AUTO_PUBLISH_GLOBAL")
     upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
     max_image_size_mb: int = Field(default=10, alias="MAX_IMAGE_SIZE_MB")
+
+    def _fallback_value(self, *keys: str) -> str:
+        """Busca el primer valor no vacio en el .env legacy de AUTOPUBLICATE."""
+
+        legacy = _legacy_env_values()
+        for key in keys:
+            value = legacy.get(key, "").strip()
+            if value:
+                return value
+        return ""
+
+    @property
+    def resolved_gemini_api_key(self) -> str:
+        """Devuelve GEMINI_API_KEY actual o fallback legacy."""
+
+        return self.gemini_api_key or self._fallback_value("GEMINI_API_KEY")
+
+    @property
+    def resolved_wp_url(self) -> str:
+        """Devuelve WP_URL actual o fallback legacy."""
+
+        return self.wp_url or self._fallback_value("WP_URL")
+
+    @property
+    def resolved_meta_page_id(self) -> str:
+        """Devuelve PAGE ID actual o alias legacy FB_PAGE_ID."""
+
+        return self.meta_page_id or self._fallback_value("META_PAGE_ID", "FB_PAGE_ID")
+
+    @property
+    def resolved_meta_ig_account_id(self) -> str:
+        """Devuelve IG account ID actual o alias legacy IG_ACCOUNT_ID."""
+
+        return self.meta_ig_account_id or self._fallback_value("META_IG_ACCOUNT_ID", "IG_ACCOUNT_ID")
+
+    @property
+    def resolved_meta_access_token(self) -> str:
+        """Devuelve access token actual o fallback legacy."""
+
+        return self.meta_access_token or self._fallback_value("META_ACCESS_TOKEN")
 
     @property
     def upload_path(self) -> Path:

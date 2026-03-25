@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def check_instagram() -> dict[str, str | bool | None]:
     """Verifica acceso básico a la cuenta de Instagram configurada."""
 
-    if not settings.meta_access_token or not settings.meta_ig_account_id:
+    if not settings.resolved_meta_access_token or not settings.resolved_meta_ig_account_id:
         return {
             "nombre": "instagram",
             "ok": False,
@@ -26,10 +26,10 @@ async def check_instagram() -> dict[str, str | bool | None]:
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
-                _graph_url(str(settings.meta_ig_account_id)),
+                _graph_url(str(settings.resolved_meta_ig_account_id)),
                 params={
                     "fields": "id,username",
-                    "access_token": settings.meta_access_token,
+                    "access_token": settings.resolved_meta_access_token,
                 },
             )
             response.raise_for_status()
@@ -93,9 +93,9 @@ def get_missing_startup_configs() -> list[str]:
         faltantes.append("SECRET_KEY")
     if not settings.public_base_url or "localhost" in settings.public_base_url:
         faltantes.append("PUBLIC_BASE_URL publico para Instagram")
-    if not settings.meta_access_token:
+    if not settings.resolved_meta_access_token:
         faltantes.append("META_ACCESS_TOKEN")
-    if not settings.meta_ig_account_id:
+    if not settings.resolved_meta_ig_account_id:
         faltantes.append("META_IG_ACCOUNT_ID")
     if not all(
         [

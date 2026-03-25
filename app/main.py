@@ -20,6 +20,7 @@ from app.services.integraciones_service import get_missing_startup_configs
 from app.utils.db_schema import ensure_database_schema
 from app.utils.passwords import hash_password
 from app.utils.scheduler import scheduler_loop
+from app.views.api.automation_router import router as automation_router
 from app.views.api.canales_router import router as canales_router
 from app.views.api.noticias_router import router as noticias_router
 from app.views.api.panel_router import router as panel_router
@@ -94,5 +95,6 @@ def create_app() -> FastAPI:
     app.include_router(publicaciones_router)
     app.include_router(system_router)
     app.include_router(panel_router)
+    app.include_router(automation_router)
     app.mount("/uploads", StaticFiles(directory=settings.upload_path), name="uploads")
     return app

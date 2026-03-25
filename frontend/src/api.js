@@ -94,6 +94,54 @@ export const panelApi = {
   dashboard: () => authorizedRequest("/api/panel/dashboard"),
   activity: () => authorizedRequest("/api/panel/actividad"),
   notifications: () => authorizedRequest("/api/panel/notificaciones"),
+  automationDashboard: () => authorizedRequest("/api/panel/automation/dashboard"),
+  automationQueue: (limit = 50) => authorizedRequest(`/api/panel/automation/queue?limit=${limit}`),
+  automationRules: () => authorizedRequest("/api/panel/automation/rules"),
+  saveAutomationRule: (payload) =>
+    authorizedRequest("/api/panel/automation/rules", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteAutomationRule: (ruleId) =>
+    authorizedRequest(`/api/panel/automation/rules/${ruleId}`, {
+      method: "DELETE",
+    }),
+  automationAccounts: () => authorizedRequest("/api/panel/automation/accounts"),
+  createAutomationAccount: (payload) =>
+    authorizedRequest("/api/panel/automation/accounts", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteAutomationAccount: (accountId) =>
+    authorizedRequest(`/api/panel/automation/accounts/${accountId}`, {
+      method: "DELETE",
+    }),
+  automationScheduler: () => authorizedRequest("/api/panel/automation/scheduler"),
+  updateAutomationScheduler: (payload) =>
+    authorizedRequest("/api/panel/automation/scheduler", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  automationEvergreen: () => authorizedRequest("/api/panel/automation/evergreen"),
+  updateAutomationEvergreen: (payload) =>
+    authorizedRequest("/api/panel/automation/evergreen", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  runAutomationRegular: () =>
+    authorizedRequest("/api/panel/automation/run/regular", {
+      method: "POST",
+    }),
+  prepareAutomationEvergreen: () =>
+    authorizedRequest("/api/panel/automation/run/evergreen/prepare", {
+      method: "POST",
+    }),
+  publishAutomationEvergreen: (payload) =>
+    authorizedRequest("/api/panel/automation/run/evergreen/publish", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  integrations: () => authorizedRequest("/api/system/integraciones"),
   sessions: ({ page = 1, pageSize = 20, q = "", soloActivas = false } = {}) => {
     const params = new URLSearchParams({
       page: String(page),
@@ -182,4 +230,22 @@ export const panelApi = {
     }),
   publicar: (noticiaId) =>
     authorizedRequest(`/api/panel/noticias/${noticiaId}/acciones/publicar`, { method: "POST" }),
+  canales: () => authorizedRequest("/api/canales/"),
+  actualizarCanal: (canalId, payload) =>
+    authorizedRequest(`/api/canales/${canalId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  toggleCanalActivo: (canalId) =>
+    authorizedRequest(`/api/canales/${canalId}/toggle-activo`, {
+      method: "POST",
+    }),
+  toggleCanalAuto: (canalId) =>
+    authorizedRequest(`/api/canales/${canalId}/toggle-auto`, {
+      method: "POST",
+    }),
+  seedCanales: () =>
+    authorizedRequest("/api/canales/seed", {
+      method: "POST",
+    }),
 };

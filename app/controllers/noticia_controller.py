@@ -290,9 +290,9 @@ def _validar_canal_para_preflight(
     if canal.tipo == TipoCanal.instagram:
         if "localhost" in settings.public_base_url:
             razones.append("PUBLIC_BASE_URL debe ser pública para Instagram.")
-        if not settings.meta_access_token or not settings.meta_ig_account_id:
+        if not settings.resolved_meta_access_token or not settings.resolved_meta_ig_account_id:
             razones.append("Faltan credenciales de Instagram/Meta.")
-    if canal.tipo == TipoCanal.facebook and (not settings.meta_access_token or not settings.meta_page_id):
+    if canal.tipo == TipoCanal.facebook and (not settings.resolved_meta_access_token or not settings.resolved_meta_page_id):
         razones.append("Faltan credenciales de Facebook/Meta.")
     if canal.tipo == TipoCanal.twitter and not all(
         [
@@ -306,7 +306,7 @@ def _validar_canal_para_preflight(
     if canal.tipo == TipoCanal.telegram and (not settings.telegram_bot_token or not settings.telegram_chat_id):
         razones.append("Faltan credenciales de Telegram.")
     if canal.tipo == TipoCanal.wordpress and (
-        not settings.wp_url or not settings.wp_user or not settings.wp_app_password
+        not settings.resolved_wp_url or not settings.wp_user or not settings.wp_app_password
     ):
         razones.append("Faltan credenciales de WordPress.")
 

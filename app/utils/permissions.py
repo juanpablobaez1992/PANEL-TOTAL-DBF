@@ -21,6 +21,8 @@ ROLE_PERMISSIONS: dict[RolPanel, set[str]] = {
         "users.manage",
         "sessions.view",
         "sessions.revoke",
+        "automation.view",
+        "automation.manage",
     },
     RolPanel.editor: {
         "dashboard.view",

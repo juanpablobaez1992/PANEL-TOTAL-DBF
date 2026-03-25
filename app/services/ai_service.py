@@ -95,7 +95,7 @@ def _fallback_generation(
 async def _call_gemini(user_prompt: str) -> dict[str, Any]:
     """Invoca Gemini y devuelve el JSON parseado."""
 
-    if not settings.gemini_api_key:
+    if not settings.resolved_gemini_api_key:
         raise RuntimeError("GEMINI_API_KEY no configurada.")
 
     url = (
@@ -109,7 +109,7 @@ async def _call_gemini(user_prompt: str) -> dict[str, Any]:
     }
 
     async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
+        response = await client.post(url, params={"key": settings.resolved_gemini_api_key}, json=payload)
         response.raise_for_status()
         data = response.json()
 
