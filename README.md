@@ -101,6 +101,24 @@ docker compose logs -f frontend
 7. Apuntar el dominio o subdominio al VPS.
 8. Activar SSL con Certbot si usas Nginx en host.
 
+### Deploy desde tu PC
+
+Si ya tenes el alias SSH `panel-vps` configurado, podes disparar el deploy desde PowerShell:
+
+```powershell
+.\scripts\deploy.ps1
+```
+
+Opciones utiles:
+
+```powershell
+.\scripts\deploy.ps1 -Push
+.\scripts\deploy.ps1 -Logs
+.\scripts\deploy.ps1 -RemotePath /ruta/real/del/proyecto
+```
+
+El path remoto por defecto del script es `/docker/panel-total-dbf`.
+
 ### Notas de arquitectura
 
 - El contenedor `frontend` escucha en `localhost:8080` del VPS.
