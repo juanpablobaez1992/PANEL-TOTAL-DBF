@@ -233,6 +233,7 @@ export function NewsDetail({
   onSaveEstadoPublicacion,
   onPublicarPublicacion,
   onReintentarPublicacion,
+  onSubirImagen,
   busyAction,
 }) {
   if (!detail) {
@@ -245,6 +246,7 @@ export function NewsDetail({
 
   const { noticia, timeline, publicaciones_timeline: publicacionesTimeline, preflight } = detail;
   const isBusy = (action) => busyAction === action || busyAction === `${action}-${noticia.id}`;
+  const isUploadingImage = busyAction === `imagen-${noticia.id}`;
 
   return (
     <section className="panel-card detail-card">
@@ -279,6 +281,40 @@ export function NewsDetail({
       />
 
       <EditorialForm loading={busyAction === `editorial-${noticia.id}`} noticia={noticia} onSave={onSaveEditorial} />
+
+      <section className="panel-subcard">
+        <div className="section-head">
+          <h4>Imagen principal</h4>
+        </div>
+        {noticia.imagen_original ? (
+          <img
+            alt="Imagen actual"
+            className="publication-image"
+            src={resolveImageUrl(noticia.imagen_original)}
+            style={{ maxWidth: "100%", marginBottom: "0.5rem" }}
+          />
+        ) : (
+          <p className="muted">Sin imagen. Sube una para que se use en todos los canales.</p>
+        )}
+        <div className="inline-actions">
+          <label style={{ cursor: "pointer" }}>
+            <input
+              accept="image/*"
+              disabled={isUploadingImage}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onSubirImagen(noticia.id, file);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+              type="file"
+            />
+            <span className={`button${isUploadingImage ? " disabled" : ""}`}>
+              {isUploadingImage ? "Subiendo..." : noticia.imagen_original ? "Reemplazar imagen" : "Subir imagen"}
+            </span>
+          </label>
+        </div>
+      </section>
       <PublicacionesForm
         loadingKey={busyAction}
         onPublicar={onPublicarPublicacion}

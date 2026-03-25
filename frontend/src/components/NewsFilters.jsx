@@ -9,6 +9,7 @@ export function NewsFilters({ filters, onChange }) {
       <select value={filters.estado} onChange={(event) => onChange({ ...filters, estado: event.target.value })}>
         <option value="">Todos los estados</option>
         <option value="borrador">Borrador</option>
+        <option value="generando">Generando</option>
         <option value="generado">Generado</option>
         <option value="aprobado">Aprobado</option>
         <option value="publicado">Publicado</option>

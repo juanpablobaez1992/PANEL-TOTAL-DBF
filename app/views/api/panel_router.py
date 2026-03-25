@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.utils.limiter import panel_limiter as _limiter
@@ -21,6 +21,8 @@ from app.models.schemas import (
     AuthTokenResponse,
     DashboardResumen,
     LogoutPayload,
+    NoticiaCreate,
+    NoticiaRead,
     NoticiaUpdate,
     PanelEditorialUpdate,
     PanelFeedItem,
@@ -208,6 +210,35 @@ async def actualizar_usuario(
     try:
         return panel_user_controller.update_user(db, user_id, payload)
     except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+
+
+@router.post("/noticias", response_model=PanelNoticiaDetalle, status_code=status.HTTP_201_CREATED)
+async def crear_noticia_panel(
+    payload: NoticiaCreate,
+    _user: dict[str, object] = Depends(require_permission("noticias.edit_content")),
+    db: Session = Depends(get_db),
+) -> PanelNoticiaDetalle:
+    """Crea una noticia en borrador desde el panel."""
+
+    noticia = noticia_controller.create_noticia(db, payload)
+    return dashboard_controller.obtener_detalle_noticia_panel(db, noticia.id)
+
+
+@router.post("/noticias/{noticia_id}/imagen", response_model=NoticiaRead)
+async def subir_imagen_panel(
+    noticia_id: int,
+    archivo: UploadFile = File(...),
+    _user: dict[str, object] = Depends(require_permission("noticias.edit_content")),
+    db: Session = Depends(get_db),
+) -> NoticiaRead:
+    """Sube o reemplaza la imagen original de una noticia desde el panel."""
+
+    try:
+        return await noticia_controller.upload_noticia_image(db, noticia_id, archivo)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except Exception as error:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
 
 

@@ -230,6 +230,33 @@ export const panelApi = {
     }),
   publicar: (noticiaId) =>
     authorizedRequest(`/api/panel/noticias/${noticiaId}/acciones/publicar`, { method: "POST" }),
+  createNoticia: (payload) =>
+    authorizedRequest("/api/panel/noticias", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  subirImagenNoticia: async (noticiaId, file) => {
+    const { accessToken } = getStoredTokens();
+    if (!accessToken) throw new Error("No hay sesion activa.");
+    const formData = new FormData();
+    formData.append("archivo", file);
+    const response = await fetch(`/api/panel/noticias/${noticiaId}/imagen`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try {
+        const payload = await response.json();
+        detail = payload.detail || JSON.stringify(payload);
+      } catch {
+        detail = await response.text();
+      }
+      throw new Error(detail);
+    }
+    return response.json();
+  },
   canales: () => authorizedRequest("/api/canales/"),
   actualizarCanal: (canalId, payload) =>
     authorizedRequest(`/api/canales/${canalId}`, {

@@ -9,11 +9,18 @@ function UserRowEditor({ item, loading, onSave }) {
     username: item.username,
     role: item.role,
     activo: item.activo,
+    password: "",
   });
 
   useEffect(() => {
-    setForm({ username: item.username, role: item.role, activo: item.activo });
+    setForm({ username: item.username, role: item.role, activo: item.activo, password: "" });
   }, [item]);
+
+  function handleSave() {
+    const payload = { username: form.username, role: form.role, activo: form.activo };
+    if (form.password.trim()) payload.password = form.password.trim();
+    onSave(item.id, payload);
+  }
 
   return (
     <article className="feed-item user-row" key={item.id}>
@@ -32,6 +39,16 @@ function UserRowEditor({ item, loading, onSave }) {
             <option value="admin">Admin</option>
           </select>
         </label>
+        <label className="field-stack">
+          Nueva contraseña
+          <input
+            autoComplete="new-password"
+            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder="Dejar vacío para no cambiar"
+            type="password"
+            value={form.password}
+          />
+        </label>
         <label className="checkbox">
           <input
             checked={form.activo}
@@ -42,7 +59,7 @@ function UserRowEditor({ item, loading, onSave }) {
         </label>
       </div>
       <div className="inline-actions">
-        <button disabled={loading} onClick={() => onSave(item.id, form)} type="button">
+        <button disabled={loading} onClick={handleSave} type="button">
           {loading ? "Guardando..." : "Guardar"}
         </button>
         <span className="muted">Creado: {new Date(item.created_at).toLocaleString()}</span>
