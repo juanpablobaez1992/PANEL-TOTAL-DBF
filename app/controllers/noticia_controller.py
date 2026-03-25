@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.config import settings
 from app.controllers.canal_controller import list_canales
 from app.models.noticia import Noticia
+from app.models.noticia_log import NoticiaLog
 from app.models.publicacion import Publicacion
 from app.models.enums import EstadoNoticia, EstadoPublicacion, TipoCanal
 from app.models.schemas import (
@@ -24,6 +25,12 @@ from app.models.schemas import (
 from app.services.ai_service import generar_contenido
 from app.services.imagen_service import procesar_imagenes_por_canal
 from app.utils.file_storage import save_upload_file
+
+def _log(db: Session, noticia_id: int, accion: str, detalle: str | None = None, usuario: str = "sistema") -> None:
+    """Registra una entrada de auditoría para una noticia."""
+
+    db.add(NoticiaLog(noticia_id=noticia_id, accion=accion, detalle=detalle, usuario=usuario))
+
 
 CHANNEL_CONTENT_MAP = {
     "wordpress": "cuerpo",
@@ -61,6 +68,7 @@ def aprobar_noticia(db: Session, noticia_id: int) -> Noticia:
 
     noticia.estado = EstadoNoticia.aprobado
     noticia.aprobado_at = datetime.now(timezone.utc)
+    _log(db, noticia_id, "aprobar", f"estado anterior: {noticia.estado.value}")
     db.commit()
     return get_noticia(db, noticia_id) or noticia
 
@@ -77,6 +85,7 @@ def programar_noticia(db: Session, noticia_id: int, programada_para: datetime) -
         raise ValueError("La fecha de programación debe estar en el futuro.")
 
     noticia.programada_para = programada_para
+    _log(db, noticia_id, "programar", f"programada_para: {programada_para.isoformat()}")
     db.commit()
     return get_noticia(db, noticia_id) or noticia
 
@@ -150,6 +159,8 @@ def create_noticia(db: Session, payload: NoticiaCreate) -> Noticia:
     db.add(noticia)
     db.commit()
     db.refresh(noticia)
+    _log(db, noticia.id, "crear")
+    db.commit()
     return get_noticia(db, noticia.id) or noticia
 
 
@@ -253,6 +264,7 @@ async def generar_noticia(db: Session, noticia_id: int) -> Noticia:
         )
         noticia.estado = EstadoNoticia.generado
         noticia.generado_at = datetime.now(timezone.utc)
+        _log(db, noticia_id, "generar", f"proveedor: {settings.ai_provider}")
         db.commit()
         db.expire_all()
         publicaciones = list(
@@ -264,6 +276,7 @@ async def generar_noticia(db: Session, noticia_id: int) -> Noticia:
             await publicar_automaticas(db, noticia.id)
     except Exception as error:  # noqa: BLE001
         noticia.estado = EstadoNoticia.error
+        _log(db, noticia_id, "generar_error", str(error))
         db.commit()
         raise RuntimeError(f"No se pudo generar la noticia: {error}") from error
 
@@ -371,6 +384,7 @@ async def procesar_noticias_programadas(db: Session) -> list[int]:
         noticia = db.get(Noticia, noticia_id)
         if noticia is not None:
             noticia.programada_para = None
+            _log(db, noticia_id, "publicar_programada", "disparado por scheduler")
             db.commit()
         procesadas.append(noticia_id)
     return procesadas

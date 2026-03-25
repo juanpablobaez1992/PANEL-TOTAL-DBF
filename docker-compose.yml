@@ -1,4 +1,20 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: despacho_db
+    environment:
+      POSTGRES_DB: despacho
+      POSTGRES_USER: despacho
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-despacho_secret}
+    volumes:
+      - despacho_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U despacho"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -7,12 +23,14 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: sqlite:////app/data/despacho.db
+      DATABASE_URL: postgresql://despacho:${POSTGRES_PASSWORD:-despacho_secret}@db:5432/despacho
       UPLOAD_DIR: /app/uploads
       APP_ENV: production
     volumes:
       - despacho_uploads:/app/uploads
-      - despacho_data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -28,4 +46,4 @@ services:
 
 volumes:
   despacho_uploads:
-  despacho_data:
+  despacho_pgdata:

@@ -9,8 +9,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.config import settings
-from app.services.facebook_service import publicar_en_instagram
+from app.services.facebook_service import publicar_en_facebook, publicar_en_instagram
 from app.services.twitter_service import publicar_en_twitter
+from app.services.wordpress_service import publicar_en_wordpress
+from app.services.telegram_service import publicar_en_telegram
 
 
 class FakeResponse:
@@ -120,3 +122,103 @@ class ServiceTests(unittest.TestCase):
                     settings.twitter_access_token,
                     settings.twitter_access_secret,
                 ) = old_values
+
+    def test_publicar_en_facebook_publica_con_imagen(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "fb.jpg"
+            image.write_bytes(b"fake-image")
+
+            old_token = settings.meta_access_token
+            old_page_id = settings.meta_page_id
+            try:
+                settings.meta_access_token = "token-meta"
+                settings.meta_page_id = "page-123"
+                FakeAsyncClient.responses = [
+                    FakeResponse({"id": "photo-1"}),
+                    FakeResponse({"id": "post-1", "post_id": "post-1"}),
+                ]
+                with patch("app.services.facebook_service.httpx.AsyncClient", FakeAsyncClient):
+                    result = asyncio.run(
+                        publicar_en_facebook(contenido="texto del post", imagen_path=str(image))
+                    )
+                self.assertTrue(result["exito"])
+                self.assertIn(result["id"], ("post-1", "photo-1", None))
+            finally:
+                settings.meta_access_token = old_token
+                settings.meta_page_id = old_page_id
+
+    def test_publicar_en_wordpress_publica_entrada(self) -> None:
+        old_wp_url = settings.wp_url
+        old_wp_user = settings.wp_user
+        old_wp_pass = settings.wp_app_password
+        try:
+            settings.wp_url = "https://example.com"
+            settings.wp_user = "editor"
+            settings.wp_app_password = "app-pass"
+            FakeAsyncClient.responses = [
+                FakeResponse({"id": 42, "link": "https://example.com/?p=42"}),
+            ]
+            with patch("app.services.wordpress_service.httpx.AsyncClient", FakeAsyncClient):
+                result = asyncio.run(
+                    publicar_en_wordpress(
+                        titulo="Noticia de prueba",
+                        contenido="<p>Cuerpo de la noticia</p>",
+                        imagen_path=None,
+                    )
+                )
+            self.assertTrue(result["exito"])
+            self.assertEqual(result["id"], "42")
+        finally:
+            settings.wp_url = old_wp_url
+            settings.wp_user = old_wp_user
+            settings.wp_app_password = old_wp_pass
+
+    def test_publicar_en_telegram_envía_mensaje(self) -> None:
+        old_token = settings.telegram_bot_token
+        old_chat = settings.telegram_chat_id
+        try:
+            settings.telegram_bot_token = "bot-token"
+            settings.telegram_chat_id = "-100123456"
+            FakeAsyncClient.responses = [
+                FakeResponse({"ok": True, "result": {"message_id": 77}}),
+            ]
+            with patch("app.services.telegram_service.httpx.AsyncClient", FakeAsyncClient):
+                result = asyncio.run(
+                    publicar_en_telegram(contenido="Mensaje de prueba", imagen_path=None)
+                )
+            self.assertTrue(result["exito"])
+        finally:
+            settings.telegram_bot_token = old_token
+            settings.telegram_chat_id = old_chat
+
+    def test_publicar_en_instagram_sin_credenciales_devuelve_error(self) -> None:
+        old_token = settings.meta_access_token
+        old_ig = settings.meta_ig_account_id
+        try:
+            settings.meta_access_token = ""
+            settings.meta_ig_account_id = ""
+            result = asyncio.run(
+                publicar_en_instagram(contenido="sin creds", imagen_path=None)
+            )
+            self.assertFalse(result["exito"])
+            self.assertIsNotNone(result["error"])
+        finally:
+            settings.meta_access_token = old_token
+            settings.meta_ig_account_id = old_ig
+
+    def test_publicar_en_wordpress_sin_credenciales_devuelve_error(self) -> None:
+        old_wp_url = settings.wp_url
+        old_wp_user = settings.wp_user
+        old_wp_pass = settings.wp_app_password
+        try:
+            settings.wp_url = ""
+            settings.wp_user = ""
+            settings.wp_app_password = ""
+            result = asyncio.run(
+                publicar_en_wordpress(titulo="test", contenido="test", imagen_path=None)
+            )
+            self.assertFalse(result["exito"])
+        finally:
+            settings.wp_url = old_wp_url
+            settings.wp_user = old_wp_user
+            settings.wp_app_password = old_wp_pass

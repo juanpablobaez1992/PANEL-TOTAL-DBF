@@ -72,3 +72,22 @@ def ensure_database_schema(engine: Engine) -> None:
             connection.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_panel_sessions_user_id ON panel_sessions (user_id)")
             )
+        if "noticia_logs" not in tables:
+            connection.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS noticia_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        noticia_id INTEGER NOT NULL,
+                        usuario VARCHAR(100) NOT NULL DEFAULT 'sistema',
+                        accion VARCHAR(50) NOT NULL,
+                        detalle TEXT,
+                        created_at DATETIME NOT NULL,
+                        FOREIGN KEY(noticia_id) REFERENCES noticias(id) ON DELETE CASCADE
+                    )
+                    """
+                )
+            )
+            connection.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_noticia_logs_noticia_id ON noticia_logs (noticia_id)")
+            )

@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+
+_limiter = Limiter(key_func=get_remote_address)
 
 from app.controllers import (
     auth_controller,
@@ -45,12 +49,13 @@ router = APIRouter(prefix="/api/panel", tags=["Panel"])
 
 
 @router.post("/auth/login", response_model=AuthTokenResponse)
+@_limiter.limit("5/minute")
 async def login(
     payload: AuthLoginPayload,
     request: Request,
     db: Session = Depends(get_db),
 ) -> AuthTokenResponse:
-    """Autentica al usuario del panel."""
+    """Autentica al usuario del panel. Máximo 5 intentos por minuto por IP."""
 
     try:
         return auth_controller.login_panel(db, payload.username, payload.password, request.headers.get("user-agent"))

@@ -6,8 +6,12 @@ import logging
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from app.config import settings
@@ -26,6 +30,9 @@ from app.views.api.noticias_router import router as noticias_router
 from app.views.api.panel_router import router as panel_router
 from app.views.api.publicaciones_router import router as publicaciones_router
 from app.views.api.system_router import router as system_router
+from app.views.api.webhook_router import router as webhook_router
+
+limiter = Limiter(key_func=get_remote_address)
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +83,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     @app.get("/", response_model=AppInfo)
     async def root() -> AppInfo:
         """Información básica de la app."""
@@ -83,12 +93,42 @@ def create_app() -> FastAPI:
         return AppInfo(app=settings.app_name, env=settings.app_env, version="0.1.0", status="ok")
 
     @app.get("/health")
-    async def health() -> dict[str, str]:
-        """Health check simple."""
+    async def health(request: Request) -> dict[str, object]:
+        """Health check con verificación de dependencias."""
 
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-        return {"status": "healthy"}
+        checks: dict[str, object] = {}
+
+        # Base de datos
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception as exc:  # noqa: BLE001
+            checks["database"] = f"error: {exc}"
+
+        # Scheduler
+        scheduler_task = getattr(app.state, "scheduler_task", None)
+        if scheduler_task is None:
+            checks["scheduler"] = "not started"
+        elif scheduler_task.done():
+            checks["scheduler"] = "stopped"
+        else:
+            checks["scheduler"] = "running"
+
+        # Configuración de IA
+        ai_configured = bool(
+            settings.gemini_api_key or settings.claude_api_key
+        )
+        checks["ai"] = "configured" if ai_configured else "missing credentials"
+
+        # Estado general
+        all_ok = checks["database"] == "ok" and checks["scheduler"] == "running"
+        status_code = 200 if all_ok else 503
+        body = {"status": "healthy" if all_ok else "degraded", "checks": checks}
+
+        if status_code != 200:
+            return JSONResponse(content=body, status_code=status_code)
+        return body
 
     app.include_router(canales_router)
     app.include_router(noticias_router)
@@ -96,5 +136,6 @@ def create_app() -> FastAPI:
     app.include_router(system_router)
     app.include_router(panel_router)
     app.include_router(automation_router)
+    app.include_router(webhook_router)
     app.mount("/uploads", StaticFiles(directory=settings.upload_path), name="uploads")
     return app

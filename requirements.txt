@@ -7,3 +7,5 @@ httpx
 pillow
 python-multipart
 cryptography
+psycopg2-binary
+slowapi

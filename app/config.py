@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     auto_publish_global: bool = Field(default=False, alias="AUTO_PUBLISH_GLOBAL")
     upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
     max_image_size_mb: int = Field(default=10, alias="MAX_IMAGE_SIZE_MB")
+    webhook_secret: str = Field(default="", alias="WEBHOOK_SECRET")
 
     def _fallback_value(self, *keys: str) -> str:
         """Busca el primer valor no vacio en el .env legacy de AUTOPUBLICATE."""

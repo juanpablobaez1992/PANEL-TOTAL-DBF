@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
+
+logger = logging.getLogger(__name__)
+
+_RETRY_DELAYS = (60, 300, 900)  # 1 min, 5 min, 15 min
 
 from app.models.enums import EstadoNoticia, EstadoPublicacion, TipoCanal
 from app.models.noticia import Noticia
@@ -135,6 +141,34 @@ async def _dispatch_publicacion(publicacion: Publicacion) -> dict[str, str | boo
     return {"id": None, "url": None, "exito": False, "error": "Canal no soportado."}
 
 
+async def _dispatch_con_reintentos(publicacion: Publicacion) -> dict[str, str | bool | None]:
+    """Intenta publicar con hasta 3 reintentos ante errores transitorios."""
+
+    last_result: dict[str, str | bool | None] = {"id": None, "url": None, "exito": False, "error": "Sin intentos"}
+    for attempt, delay in enumerate((*_RETRY_DELAYS, None), start=1):
+        last_result = await _dispatch_publicacion(publicacion)
+        if last_result["exito"]:
+            return last_result
+        if delay is None:
+            break
+        logger.warning(
+            "Publicación %d falló (intento %d/%d). Reintentando en %ds. Error: %s",
+            publicacion.id,
+            attempt,
+            len(_RETRY_DELAYS) + 1,
+            delay,
+            last_result.get("error"),
+        )
+        await asyncio.sleep(delay)
+    logger.error(
+        "Publicación %d falló tras %d intentos. Error final: %s",
+        publicacion.id,
+        len(_RETRY_DELAYS) + 1,
+        last_result.get("error"),
+    )
+    return last_result
+
+
 def _actualizar_estado_noticia(db: Session, noticia_id: int) -> None:
     """Consolida el estado global de una noticia según sus publicaciones."""
 
@@ -182,7 +216,7 @@ async def publicar_individual(
     ):
         raise ValueError("La noticia debe estar aprobada antes de publicar manualmente.")
 
-    result = await _dispatch_publicacion(publicacion)
+    result = await _dispatch_con_reintentos(publicacion)
     publicacion.external_id = result["id"]
     publicacion.external_url = result["url"]
     publicacion.error_log = result["error"]
