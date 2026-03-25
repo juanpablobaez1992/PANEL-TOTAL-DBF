@@ -51,6 +51,63 @@ npm install
 npm run dev
 ```
 
+## Deploy en VPS con Docker
+
+Archivos incluidos para deploy:
+
+- `Dockerfile` para FastAPI
+- `frontend/Dockerfile` para build de React + Nginx
+- `frontend/nginx.conf` para servir SPA y proxyear `/api` y `/uploads`
+- `docker-compose.yml` para levantar backend + frontend
+- `deploy/nginx/hostinger.conf` como ejemplo de reverse proxy en el VPS
+
+### Variables recomendadas para produccion
+
+En el VPS, completa `.env` y asegurate especialmente de definir:
+
+```bash
+APP_ENV=production
+SECRET_KEY <una-clave-larga-y-segura>
+PUBLIC_BASE_URL=https://despacho.tudominio.com
+```
+
+`docker-compose.yml` ya fuerza:
+
+- `DATABASE_URL=sqlite:////app/data/despacho.db`
+- `UPLOAD_DIR=/app/uploads`
+
+Eso hace que SQLite y uploads queden persistidos en volumenes Docker.
+
+### Pasos en Hostinger
+
+1. Instalar Docker y Compose plugin.
+2. Clonar el repo en el VPS.
+3. Crear `.env` real desde `.env.example`.
+4. Levantar:
+
+```bash
+docker compose up -d --build
+```
+
+5. Ver estado:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+6. Configurar Nginx del VPS usando `deploy/nginx/hostinger.conf`, ajustando el dominio real.
+7. Apuntar el dominio o subdominio al VPS.
+8. Activar SSL con Certbot si usas Nginx en host.
+
+### Notas de arquitectura
+
+- El contenedor `frontend` escucha en `localhost:8080` del VPS.
+- Ese frontend ya proxyea `/api` y `/uploads` al contenedor `backend`.
+- El Nginx del host solo necesita redirigir el dominio a `127.0.0.1:8080`.
+- Para Instagram/Meta, `PUBLIC_BASE_URL` debe ser una URL publica real accesible desde internet.
+
 ## Checks rápidos
 
 ```bash

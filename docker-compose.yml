@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: despacho_backend
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: sqlite:////app/data/despacho.db
+      UPLOAD_DIR: /app/uploads
+      APP_ENV: production
+    volumes:
+      - despacho_uploads:/app/uploads
+      - despacho_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: despacho_frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  despacho_uploads:
+  despacho_data:
