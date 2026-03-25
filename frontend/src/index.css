@@ -1,9 +1,25 @@
 :root {
-  font-family: Georgia, "Times New Roman", serif;
+  --font-body: "Aptos", "Segoe UI", "Trebuchet MS", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Baskerville", serif;
+  --ink-strong: #241913;
+  --ink-soft: #6a5548;
+  --paper: #f4eee4;
+  --paper-strong: #fbf8f1;
+  --panel: rgba(255, 252, 247, 0.92);
+  --line: rgba(78, 55, 37, 0.14);
+  --line-strong: rgba(78, 55, 37, 0.22);
+  --accent: #7e5835;
+  --accent-soft: #ede0c7;
+  --shadow-soft: 0 22px 48px rgba(72, 45, 22, 0.08);
+  --shadow-strong: 0 30px 60px rgba(72, 45, 22, 0.12);
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
-  color: #2d241b;
-  background: #efe4d2;
+  color: var(--ink-strong);
+  background:
+    linear-gradient(90deg, rgba(110, 75, 36, 0.07) 0, rgba(110, 75, 36, 0.07) 1px, transparent 1px, transparent 100%),
+    linear-gradient(180deg, #f8f4ec 0%, #efe4d8 100%);
+  background-size: 24px 24px, auto;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,6 +32,7 @@
 
 body {
   margin: 0;
+  min-width: 320px;
 }
 
 h1,
@@ -26,6 +43,22 @@ p {
   margin: 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+strong {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 a {
   color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

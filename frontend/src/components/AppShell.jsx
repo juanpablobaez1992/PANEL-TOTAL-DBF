@@ -8,53 +8,57 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
-          <p className="eyebrow">Panel conectado</p>
-          <h2>{profile.user.username}</h2>
-          <p className="muted">Rol: {profile.user.role}</p>
-        </div>
-        <nav className="nav-list">
-          <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/dashboard">
-            Dashboard
-          </NavLink>
-          <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/noticias">
-            Noticias
-          </NavLink>
-          {isAdmin ? (
-            <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/usuarios">
-              Usuarios
-            </NavLink>
-          ) : null}
-          {isAdmin ? (
-            <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/sesiones">
-              Sesiones
-            </NavLink>
-          ) : null}
-        </nav>
-        <div className="permissions-box">
-          <strong>Permisos</strong>
-          <div className="permissions-list">
-            {profile.permissions.map((permission) => (
-              <span className="permission-chip" key={permission}>
-                {permission}
-              </span>
-            ))}
+        <div className="sidebar-frame">
+          <div className="brand-block">
+            <p className="eyebrow">Despacho editorial</p>
+            <h2 className="brand-title">Panel De Buena Fe</h2>
+            <p className="muted">Operacion diaria, revision de noticias y salidas a canales.</p>
+          </div>
+
+          <div className="sidebar-section">
+            <p className="sidebar-label">Navegacion</p>
+            <nav className="nav-list">
+              <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/dashboard">
+                Dashboard
+              </NavLink>
+              <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/noticias">
+                Noticias
+              </NavLink>
+              {isAdmin ? (
+                <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/usuarios">
+                  Usuarios
+                </NavLink>
+              ) : null}
+              {isAdmin ? (
+                <NavLink className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`} to="/sesiones">
+                  Sesiones
+                </NavLink>
+              ) : null}
+            </nav>
+          </div>
+
+          <div className="sidebar-profile">
+            <p className="sidebar-label">Sesion activa</p>
+            <strong>{profile.user.username}</strong>
+            <p className="muted">Perfil {profile.user.role}</p>
+            <button className="ghost-button sidebar-signout" onClick={signOut} type="button">
+              Cerrar sesion
+            </button>
           </div>
         </div>
-        <button className="ghost-button" onClick={signOut} type="button">
-          Cerrar sesion
-        </button>
       </aside>
       <main className="content">
-        {error ? (
-          <section className="inline-error global-error">
-            <span>{error}</span>
-            <button className="ghost-button" onClick={() => setError("")} type="button">
-              Cerrar
-            </button>
-          </section>
-        ) : null}
-        <Outlet />
+        <div className="content-frame">
+          {error ? (
+            <section className="inline-error global-error">
+              <span>{error}</span>
+              <button className="ghost-button" onClick={() => setError("")} type="button">
+                Cerrar
+              </button>
+            </section>
+          ) : null}
+          <Outlet />
+        </div>
       </main>
     </div>
   );
