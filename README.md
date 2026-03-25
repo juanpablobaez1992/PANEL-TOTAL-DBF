@@ -1,220 +1,305 @@
-# Despacho
+# Despacho — Panel de Distribución de Noticias
 
-Backend API para publicar noticias de De Buena Fe Digital en múltiples canales a partir de un input mínimo.
+Plataforma de publicación multicanal para **De Buena Fe Digital**. Un periodista ingresa el hecho con un mínimo de datos, la IA genera el contenido para cada canal, y el sistema distribuye automáticamente (o con aprobación manual) a WordPress, Facebook, Instagram, Twitter/X, Telegram y WhatsApp.
 
-## Stack
+---
 
-- FastAPI
-- SQLAlchemy 2.0
-- Pydantic v2
-- SQLite
-- httpx
-- Pillow
+## Cómo funciona
 
-## Estructura
-
-La aplicación sigue un patrón MVC estricto:
-
-- `app/models`: modelos SQLAlchemy y schemas Pydantic
-- `app/controllers`: lógica de negocio y orquestación
-- `app/services`: integraciones externas
-- `app/views/api`: routers HTTP
-- `app/utils`: helpers compartidos
-
-## Puesta en marcha
-
-1. Crear entorno virtual e instalar dependencias:
-
-```bash
-python -m pip install -r requirements.txt
+```
+Periodista ingresa el hecho
+        ↓
+   IA genera contenido adaptado por canal
+        ↓
+  Editor aprueba (o se auto-publica si está configurado)
+        ↓
+  Distribución simultánea a todos los canales activos
 ```
 
-2. Copiar variables de entorno:
+Cada canal recibe su versión optimizada: artículo largo para WordPress, copy corto para Twitter/X, caption para Instagram, etc.
+
+---
+
+## Inicio rápido
+
+### Opción A — Con Make (recomendado)
 
 ```bash
-copy .env.example .env
+# 1. Configurar entorno
+cp .env.example .env          # editar con tus credenciales
+make install                  # instala Python + Node deps
+
+# 2. Levantar
+make dev-back                 # FastAPI en :8000
+make dev-front                # React en :5173 (otra terminal)
 ```
 
-Si ya existe `.env`, completá ahí las credenciales reales.
-
-3. Levantar la API:
+### Opción B — Manual
 
 ```bash
+# Backend
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env          # completar credenciales
 uvicorn main:app --reload --port 8000
-```
 
-4. Levantar el panel React:
-
-```bash
+# Frontend (otra terminal)
 cd frontend
 npm install
 npm run dev
 ```
 
-## Deploy en VPS con Docker
-
-Archivos incluidos para deploy:
-
-- `Dockerfile` para FastAPI
-- `frontend/Dockerfile` para build de React + Nginx
-- `frontend/nginx.conf` para servir SPA y proxyear `/api` y `/uploads`
-- `docker-compose.yml` para levantar backend + frontend
-- `deploy/nginx/hostinger.conf` como ejemplo de reverse proxy en el VPS
-
-### Variables recomendadas para produccion
-
-En el VPS, completa `.env` y asegurate especialmente de definir:
+### Opción C — Docker (producción)
 
 ```bash
-APP_ENV=production
-SECRET_KEY <una-clave-larga-y-segura>
-PUBLIC_BASE_URL=https://despacho.tudominio.com
+cp .env.example .env          # completar credenciales
+docker compose up -d --build
+# Frontend en :8080, backend interno en :8000
 ```
 
-`docker-compose.yml` ya fuerza:
+---
 
-- `DATABASE_URL=sqlite:////app/data/despacho.db`
-- `UPLOAD_DIR=/app/uploads`
+## Panel web
 
-Eso hace que SQLite y uploads queden persistidos en volumenes Docker.
+Abrí el navegador en `http://localhost:5173` (dev) o `http://localhost:8080` (Docker).
 
-### Pasos en Hostinger
+| Ruta | Acceso | Descripción |
+|------|--------|-------------|
+| `/login` | Público | Inicio de sesión |
+| `/dashboard` | Todos | Métricas y actividad reciente |
+| `/noticias` | Todos | Crear, generar, aprobar y publicar noticias |
+| `/automation` | Admin | Reglas de publicación automática |
+| `/canales` | Admin | Configurar credenciales de cada canal |
+| `/usuarios` | Admin | Gestión de cuentas del panel |
+| `/sesiones` | Admin | Sesiones activas y revocación |
 
-1. Instalar Docker y Compose plugin.
-2. Clonar el repo en el VPS.
-3. Crear `.env` real desde `.env.example`.
-4. Levantar:
+**Credenciales por defecto:** `admin` / `admin` (cambialas en `.env` antes de producción).
+
+---
+
+## Stack
+
+**Backend**
+- Python 3.11 · FastAPI · SQLAlchemy 2.0 · Pydantic v2
+- SQLite (dev) / PostgreSQL (producción Docker)
+- httpx · Pillow · cryptography · slowapi
+
+**Frontend**
+- React 19 · React Router 7 · Vite 8
+- Sin UI framework externo — CSS propio
+
+**Infraestructura**
+- Docker Compose (backend + PostgreSQL + Nginx/frontend)
+- Nginx como reverse proxy en el VPS
+
+---
+
+## Configuración de canales
+
+Todas las credenciales de canales se guardan **cifradas** en la base de datos con `SECRET_KEY`. Se configuran desde el panel web (sección Canales) sin necesidad de tocar el `.env`.
+
+Las variables de entorno son solo para el arranque inicial. Ver `.env.example` para la lista completa.
+
+**Variables mínimas para empezar:**
+
+```env
+SECRET_KEY=una-clave-larga-y-aleatoria
+APP_ENV=development
+AI_PROVIDER=gemini          # o claude
+GEMINI_API_KEY=tu-api-key
+PANEL_ADMIN_USERNAME=admin
+PANEL_ADMIN_PASSWORD=una-contraseña-segura
+PUBLIC_BASE_URL=http://localhost:8000   # debe ser URL pública en producción
+```
+
+> **Importante:** `PUBLIC_BASE_URL` debe ser una URL accesible desde internet para que Instagram pueda descargar las imágenes. En desarrollo local, Instagram no funcionará.
+
+---
+
+## Canales soportados
+
+| Canal | Tipo de contenido | Auth |
+|-------|-------------------|------|
+| WordPress | Artículo completo con imagen | Basic Auth (App Password) |
+| Facebook | Post con foto o texto | Meta Graph API |
+| Instagram | Imagen + caption | Meta Graph API |
+| Twitter / X | Tweet corto con imagen | OAuth 1.0a |
+| Telegram | Mensaje con o sin imagen | Bot API |
+| WhatsApp | Copy listo para pegar | Manual |
+
+---
+
+## Flujo editorial
+
+```
+borrador → generando → generado → aprobado → publicado
+                                            ↘ error
+```
+
+1. **Crear** noticia con hecho, lugar y categoría
+2. **Generar** — la IA produce titular, bajada, cuerpo y copy por canal
+3. **Aprobar** — el editor valida el contenido
+4. **Publicar** — inmediatamente o programado para más tarde
+
+Las noticias con `urgencia: breaking` pueden configurarse para **auto-publicarse** sin aprobación manual si `AUTO_PUBLISH_GLOBAL=true`.
+
+---
+
+## Comandos útiles
 
 ```bash
+make test                     # corre todos los tests de Python
+make lint                     # ESLint en el frontend
+make check-integrations       # verifica credenciales de APIs externas
+make logs                     # tail de logs Docker en tiempo real
+make up / make down           # levantar / bajar contenedores
+make rotate-key NEW_KEY=xxx   # rotar SECRET_KEY sin perder datos
+```
+
+Ver `make help` para la lista completa.
+
+---
+
+## Deploy en VPS (Hostinger / cualquier VPS con Docker)
+
+### Pasos iniciales
+
+```bash
+# En el VPS
+git clone <repo> /docker/panel-total-dbf
+cd /docker/panel-total-dbf
+cp .env.example .env
+# Editar .env con credenciales reales
 docker compose up -d --build
 ```
 
-5. Ver estado:
+### Nginx en el host
 
-```bash
-docker compose ps
-docker compose logs -f backend
-docker compose logs -f frontend
+Usar `deploy/nginx/hostinger.conf` como base. Solo ajustá el dominio:
+
+```nginx
+server_name despacho.tudominio.com;
+proxy_pass http://127.0.0.1:8080;
 ```
 
-6. Configurar Nginx del VPS usando `deploy/nginx/hostinger.conf`, ajustando el dominio real.
-7. Apuntar el dominio o subdominio al VPS.
-8. Activar SSL con Certbot si usas Nginx en host.
+Luego activar SSL:
+```bash
+certbot --nginx -d despacho.tudominio.com
+```
 
-### Deploy desde tu PC
+### Deploy desde tu PC (PowerShell)
 
-Si ya tenes el alias SSH `panel-vps` configurado, podes disparar el deploy desde PowerShell:
+Si tenés el alias SSH `panel-vps` configurado:
 
 ```powershell
-.\scripts\deploy.ps1
+.\scripts\deploy.ps1          # deploy normal
+.\scripts\deploy.ps1 -Push    # git push + deploy
+.\scripts\deploy.ps1 -Logs    # ver logs en vivo
 ```
 
-Opciones utiles:
+### Arquitectura Docker
 
-```powershell
-.\scripts\deploy.ps1 -Push
-.\scripts\deploy.ps1 -Logs
-.\scripts\deploy.ps1 -RemotePath /ruta/real/del/proyecto
+```
+Internet → Nginx (host) → :8080 (despacho_frontend/Nginx)
+                                    ↓
+                          /api, /uploads → :8000 (despacho_backend/FastAPI)
+                                    ↓
+                              despacho_db (PostgreSQL)
 ```
 
-El path remoto por defecto del script es `/docker/panel-total-dbf`.
+---
 
-### Notas de arquitectura
+## Webhook de ingesta
 
-- El contenedor `frontend` escucha en `localhost:8080` del VPS.
-- Ese frontend ya proxyea `/api` y `/uploads` al contenedor `backend`.
-- El Nginx del host solo necesita redirigir el dominio a `127.0.0.1:8080`.
-- Para Instagram/Meta, `PUBLIC_BASE_URL` debe ser una URL publica real accesible desde internet.
-
-## Checks rápidos
+Si querés que sistemas externos (feeds RSS, bots, redactores remotos) envíen noticias automáticamente:
 
 ```bash
-python -c "from app import create_app; create_app()"
+# En .env
+WEBHOOK_SECRET=un-token-secreto-largo
+
+# Llamada desde el sistema externo
+curl -X POST https://despacho.tudominio.com/api/webhooks/noticia \
+  -H "X-Webhook-Secret: un-token-secreto-largo" \
+  -H "Content-Type: application/json" \
+  -d '{"hecho": "El intendente inauguró el nuevo hospital", "lugar": "San Rafael", "categoria": "sociedad"}'
+```
+
+La noticia llega en estado `borrador` y queda lista para que un editor la genere y apruebe.
+
+---
+
+## Seguridad
+
+- Credenciales de canales cifradas con AES-128 (Fernet) usando `SECRET_KEY`
+- Rate limiting en `/api/panel/auth/login`: máximo 5 intentos por minuto por IP
+- Hook `pre-commit` escanea commits en busca de secretos hardcodeados
+- Tokens JWT con refresh automático; sesiones revocables desde el panel
+- Para rotar `SECRET_KEY` sin perder datos: `make rotate-key NEW_KEY=<nueva-clave>`
+
+```bash
+# Activar el hook de git (solo la primera vez)
+git config core.hooksPath .githooks
+```
+
+---
+
+## Health check
+
+```bash
+curl http://localhost:8000/health
+```
+
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": "ok",
+    "scheduler": "running",
+    "ai": "configured"
+  }
+}
+```
+
+---
+
+## Tests
+
+```bash
+make test
+# o directamente:
 python -m unittest discover -s tests -v
-python scripts/check_integrations.py
-python scripts/check_secrets.py
-cd frontend && npm run build
 ```
 
-## Endpoints principales
+Los tests cubren el flujo completo (crear → generar → aprobar → publicar) y los servicios externos con mocks (no requieren credenciales reales).
 
-- `GET /`
-- `GET /health`
-- `GET /api/canales/`
-- `POST /api/canales/seed`
-- `GET /api/noticias/`
-- `POST /api/noticias/`
-- `POST /api/noticias/{id}/generar`
-- `GET /api/noticias/{id}/preflight`
-- `POST /api/noticias/{id}/programar`
-- `POST /api/noticias/{id}/cancelar-programacion`
-- `POST /api/noticias/despacho`
-- `POST /api/publicaciones/noticia/{id}/publicar`
-- `POST /api/panel/auth/login`
-- `POST /api/panel/auth/refresh`
-- `POST /api/panel/auth/logout`
-- `GET /api/panel/me`
-- `GET /api/panel/dashboard`
-- `GET /api/panel/actividad`
-- `GET /api/panel/notificaciones`
-- `GET /api/panel/sesiones`
-- `POST /api/panel/sesiones/revocar/{id}`
-- `GET /api/panel/usuarios`
-- `POST /api/panel/usuarios`
-- `PUT /api/panel/usuarios/{id}`
-- `GET /api/panel/noticias`
-- `GET /api/panel/noticias/{id}`
-- `PATCH /api/panel/noticias/{id}/estado`
-- `POST /api/panel/noticias/{id}/acciones/generar`
-- `POST /api/panel/noticias/{id}/acciones/aprobar`
-- `GET /api/panel/noticias/{id}/acciones/preflight`
-- `POST /api/panel/noticias/{id}/acciones/programar`
-- `POST /api/panel/noticias/{id}/acciones/cancelar-programacion`
-- `POST /api/panel/noticias/{id}/acciones/publicar`
-- `GET /api/sistema/integraciones`
+---
 
-## Panel React
+## Arquitectura del código
 
-- Rutas disponibles: `/login`, `/dashboard`, `/noticias/:id?`, `/usuarios`, `/sesiones`
-- El panel hidrata perfil y permisos con `GET /api/panel/me`
-- Dashboard y vistas operativas usan refresh automÃ¡tico periÃ³dico para reflejar cambios de estado sin recargar manualmente
-- La pantalla de noticias permite generar, aprobar, revalidar preflight, programar y publicar desde acciones rÃ¡pidas
-- La pantalla de usuarios ya usa formulario real para crear cuentas persistidas
-
-## Notas
-
-- Si no hay credenciales de IA configuradas, el sistema usa una generación local de respaldo.
-- `config_json` se guarda cifrado en la base de datos usando `SECRET_KEY`; la API trabaja con `config`.
-- Si cambiás `SECRET_KEY`, los `config_json` ya cifrados dejan de ser legibles y hay que volver a cargar las credenciales de canales.
-- Instagram requiere `PUBLIC_BASE_URL` apuntando a una URL pública real para que Meta pueda leer la imagen.
-- Twitter/X publica vía OAuth 1.0a con las credenciales ya definidas en `.env`.
-- WhatsApp queda resuelto como publicación manual con copy listo para copiar y pegar.
-
-## Prueba real de Instagram y X
-
-## Seguridad Git
-
-- `.gitignore` ahora ignora `.env.*` y `*.sqlite3`, manteniendo visible solo `.env.example`.
-- El repo usa `core.hooksPath=.githooks`.
-- El hook `.githooks/pre-commit` ejecuta `python scripts/check_secrets.py` para frenar commits con secretos staged.
-
-1. Completar `.env` con credenciales reales de Meta y X.
-2. Asegurar que `PUBLIC_BASE_URL` sea accesible desde internet.
-3. Ejecutar:
-
-```bash
-python scripts/check_integrations.py
-uvicorn main:app --reload --port 8000
+```
+app/
+├── models/       # SQLAlchemy + Pydantic schemas
+├── controllers/  # toda la lógica de negocio
+├── services/     # integraciones externas (solo I/O)
+├── views/api/    # routers HTTP (thin — solo delegan a controllers)
+└── utils/        # helpers: auth, encrypt, scheduler, permisos
 ```
 
-4. Crear una noticia, generarla, aprobarla y publicar:
+**Regla:** la lógica de negocio vive **únicamente** en `controllers/`. Los routers no acceden a la DB ni llaman servicios directamente.
 
-```bash
-curl -X POST http://localhost:8000/api/noticias/ ^
-  -H "Content-Type: application/json" ^
-  -d "{\"hecho\":\"Prueba de publicación real\",\"lugar\":\"San Rafael\",\"categoria\":\"general\"}"
+---
 
-curl -X POST http://localhost:8000/api/noticias/1/generar
-curl -X POST http://localhost:8000/api/noticias/1/aprobar
-curl -X POST http://localhost:8000/api/publicaciones/noticia/1/publicar
-```
+## Preguntas frecuentes
+
+**¿Puedo usar Claude en lugar de Gemini?**
+Sí. Cambiá `AI_PROVIDER=claude` y completá `CLAUDE_API_KEY` en `.env`.
+
+**¿Qué pasa si cambio SECRET_KEY?**
+Los `config_json` ya cifrados dejan de ser legibles. Usá `make rotate-key NEW_KEY=<nueva>` para re-encriptar todo antes de cambiarla.
+
+**¿Instagram no publica en local?**
+Necesita que `PUBLIC_BASE_URL` sea una URL pública accesible desde internet. Meta descarga la imagen desde esa URL. En desarrollo, usá un túnel como ngrok.
+
+**¿WhatsApp publica solo?**
+No. WhatsApp genera el copy listo para copiar/pegar. La publicación es manual desde la app.
