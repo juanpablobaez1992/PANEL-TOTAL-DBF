@@ -57,6 +57,7 @@ npm run dev
 python -c "from app import create_app; create_app()"
 python -m unittest discover -s tests -v
 python scripts/check_integrations.py
+python scripts/check_secrets.py
 cd frontend && npm run build
 ```
 
@@ -115,6 +116,12 @@ cd frontend && npm run build
 - WhatsApp queda resuelto como publicación manual con copy listo para copiar y pegar.
 
 ## Prueba real de Instagram y X
+
+## Seguridad Git
+
+- `.gitignore` ahora ignora `.env.*` y `*.sqlite3`, manteniendo visible solo `.env.example`.
+- El repo usa `core.hooksPath=.githooks`.
+- El hook `.githooks/pre-commit` ejecuta `python scripts/check_secrets.py` para frenar commits con secretos staged.
 
 1. Completar `.env` con credenciales reales de Meta y X.
 2. Asegurar que `PUBLIC_BASE_URL` sea accesible desde internet.
