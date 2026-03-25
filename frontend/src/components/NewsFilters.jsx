@@ -2,7 +2,7 @@ export function NewsFilters({ filters, onChange }) {
   return (
     <div className="filters-row">
       <input
-        placeholder="Buscar por hecho, título o lugar"
+        placeholder="Buscar por hecho, titulo o lugar"
         value={filters.q}
         onChange={(event) => onChange({ ...filters, q: event.target.value })}
       />

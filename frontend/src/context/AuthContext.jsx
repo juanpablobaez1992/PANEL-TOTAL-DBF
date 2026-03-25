@@ -52,6 +52,7 @@ export function AuthProvider({ children }) {
     }
     clearTokens();
     setProfile(null);
+    setError("");
   }
 
   const value = useMemo(

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { panelApi } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { usePolling } from "../hooks/usePolling";
-import { panelApi } from "../api";
 
 export function SessionsPage() {
   const { setError } = useAuth();
@@ -62,7 +62,7 @@ export function SessionsPage() {
         <div className="section-head">
           <h3>Sesiones registradas</h3>
           <span>
-            {sessions.total} sesiones · pagina {currentPage} de {totalPages}
+            {sessions.total} sesiones - pagina {currentPage} de {totalPages}
           </span>
         </div>
         <div className="filters-row">
@@ -81,6 +81,7 @@ export function SessionsPage() {
           </label>
         </div>
         <div className="feed-list">
+          {sessions.items.length === 0 ? <p className="muted">No hay sesiones para los filtros actuales.</p> : null}
           {sessions.items.map((item) => (
             <article className="session-item" key={item.id}>
               <div>

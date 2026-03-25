@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { panelApi } from "../api";
 import { NewsDetail } from "../components/NewsDetail";
 import { NewsFilters } from "../components/NewsFilters";
 import { NewsList } from "../components/NewsList";
 import { useAuth } from "../context/AuthContext";
 import { usePolling } from "../hooks/usePolling";
-import { panelApi } from "../api";
 
 export function NewsPage() {
   const { id } = useParams();
@@ -174,8 +174,8 @@ export function NewsPage() {
       <header className="hero">
         <div>
           <p className="eyebrow">Noticias</p>
-          <h1>Revisión editorial y acciones rápidas</h1>
-          <p className="muted">Filtrá noticias, revisá preflight por canal y operá el flujo completo.</p>
+          <h1>Revision editorial y acciones rapidas</h1>
+          <p className="muted">Filtra noticias, revisa preflight por canal y opera el flujo completo.</p>
         </div>
       </header>
 

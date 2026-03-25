@@ -2,7 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export function AppShell() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, error, setError } = useAuth();
   const isAdmin = profile.user.role === "admin";
 
   return (
@@ -46,6 +46,14 @@ export function AppShell() {
         </button>
       </aside>
       <main className="content">
+        {error ? (
+          <section className="inline-error global-error">
+            <span>{error}</span>
+            <button className="ghost-button" onClick={() => setError("")} type="button">
+              Cerrar
+            </button>
+          </section>
+        ) : null}
         <Outlet />
       </main>
     </div>

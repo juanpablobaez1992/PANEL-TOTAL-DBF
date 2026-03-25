@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const initialLogin = { username: "admin", password: "admin" };
+const initialLogin = { username: "", password: "" };
 
 export function LoginPage() {
   const { isAuthenticated, signIn, error: authError, setError } = useAuth();
@@ -31,25 +31,26 @@ export function LoginPage() {
     <div className="login-shell">
       <div className="login-card">
         <p className="eyebrow">Despacho Panel</p>
-        <h1>Ingresar al centro de publicación</h1>
-        <p className="muted">Administrá noticias, validá integraciones y dispará publicaciones desde un solo lugar.</p>
+        <h1>Ingresar al centro de publicacion</h1>
+        <p className="muted">Administra noticias, valida integraciones y dispara publicaciones desde un solo lugar.</p>
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
             Usuario
             <input
-              value={form.username}
               onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+              value={form.username}
             />
           </label>
           <label>
-            Contraseña
+            Contrasena
             <input
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
               type="password"
               value={form.password}
-              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
             />
           </label>
           {authError ? <div className="inline-error">{authError}</div> : null}
+          <p className="muted">Usa el usuario del panel configurado en el archivo `.env` del backend.</p>
           <button className="primary-button" disabled={loading} type="submit">
             {loading ? "Ingresando..." : "Ingresar"}
           </button>

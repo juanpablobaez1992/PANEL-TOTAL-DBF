@@ -40,6 +40,7 @@
   padding: 28px;
   display: grid;
   gap: 20px;
+  align-content: start;
 }
 
 .hero,
@@ -211,7 +212,8 @@ button:disabled {
 .feed-item,
 .timeline-item,
 .news-item,
-.session-item {
+.session-item,
+.quick-link {
   border-radius: 16px;
   background: #fffdfa;
   border: 1px solid rgba(91, 68, 42, 0.08);
@@ -240,7 +242,8 @@ button:disabled {
 
 .feed-list,
 .news-list,
-.timeline-list {
+.timeline-list,
+.quick-links {
   display: grid;
   gap: 12px;
 }
@@ -252,7 +255,6 @@ button:disabled {
 
 .news-item {
   padding: 14px;
-  background: #fffdfa;
   color: #2d241b;
   display: grid;
   gap: 12px;
@@ -381,16 +383,30 @@ button:disabled {
   padding: 10px;
 }
 
-.external-link {
+.external-link,
+.quick-link {
   display: inline-flex;
   align-items: center;
   color: #724f2b;
   text-decoration: none;
+}
+
+.external-link {
   padding: 10px 0;
 }
 
-.external-link:hover {
+.quick-link {
+  padding: 14px 16px;
+}
+
+.external-link:hover,
+.quick-link:hover {
   text-decoration: underline;
+}
+
+.quick-link:hover {
+  border-color: rgba(138, 98, 55, 0.34);
+  background: #fcf6ee;
 }
 
 .pager {
@@ -441,6 +457,13 @@ button:disabled {
   color: #7c2d2d;
 }
 
+.global-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
 .inline-error.wide {
   max-width: 420px;
 }
@@ -467,5 +490,10 @@ button:disabled {
   .sidebar {
     border-right: none;
     border-bottom: 1px solid rgba(74, 58, 40, 0.12);
+  }
+
+  .global-error {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

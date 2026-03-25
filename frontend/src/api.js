@@ -68,7 +68,7 @@ export async function logout(refreshToken) {
 async function authorizedRequest(path, options = {}, retry = true) {
   const { accessToken, refreshToken } = getStoredTokens();
   if (!accessToken) {
-    throw new Error("No hay sesión activa.");
+    throw new Error("No hay sesion activa.");
   }
 
   try {

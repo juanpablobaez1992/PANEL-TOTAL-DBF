@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { AuthProvider } from "./context/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppShell } from "./components/AppShell";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewsPage } from "./pages/NewsPage";
@@ -17,6 +17,10 @@ function ProtectedLayout() {
   );
 }
 
+function AdminOnly({ children }) {
+  return <ProtectedRoute requireAdmin>{children}</ProtectedRoute>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -26,8 +30,22 @@ export default function App() {
           <Route element={<DashboardPage />} path="/" />
           <Route element={<DashboardPage />} path="/dashboard" />
           <Route element={<NewsPage />} path="/noticias/:id?" />
-          <Route element={<UsersPage />} path="/usuarios" />
-          <Route element={<SessionsPage />} path="/sesiones" />
+          <Route
+            element={
+              <AdminOnly>
+                <UsersPage />
+              </AdminOnly>
+            }
+            path="/usuarios"
+          />
+          <Route
+            element={
+              <AdminOnly>
+                <SessionsPage />
+              </AdminOnly>
+            }
+            path="/sesiones"
+          />
         </Route>
         <Route element={<Navigate replace to="/" />} path="*" />
       </Routes>

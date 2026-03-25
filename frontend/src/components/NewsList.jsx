@@ -31,10 +31,11 @@ export function NewsList({
       <div className="section-head">
         <h3>Noticias</h3>
         <span>
-          {total} resultados · pagina {page} de {totalPages}
+          {total} resultados - pagina {page} de {totalPages}
         </span>
       </div>
       <div className="news-list">
+        {noticias.length === 0 ? <p className="muted">No hay noticias para los filtros actuales.</p> : null}
         {noticias.map((item) => (
           <article className={`news-item ${selectedId === item.id ? "selected" : ""}`} key={item.id}>
             <Link className="news-link" to={`/noticias/${item.id}`}>
@@ -44,7 +45,7 @@ export function NewsList({
               </div>
               <p>{item.bajada || item.hecho}</p>
               <small>
-                {item.lugar || "Sin lugar"} · {item.categoria}
+                {item.lugar || "Sin lugar"} - {item.categoria}
               </small>
             </Link>
             <div className="inline-actions">

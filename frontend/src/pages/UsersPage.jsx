@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { panelApi } from "../api";
 import { UserForm } from "../components/UserForm";
 import { useAuth } from "../context/AuthContext";
 import { usePolling } from "../hooks/usePolling";
-import { panelApi } from "../api";
 
 function UserRowEditor({ item, loading, onSave }) {
   const [form, setForm] = useState({
@@ -125,7 +125,7 @@ export function UsersPage() {
           <div className="section-head">
             <h3>Usuarios existentes</h3>
             <span>
-              {users.total} en total · pagina {currentPage} de {totalPages}
+              {users.total} en total - pagina {currentPage} de {totalPages}
             </span>
           </div>
           <div className="filters-row">
@@ -141,6 +141,7 @@ export function UsersPage() {
             </select>
           </div>
           <div className="feed-list">
+            {users.items.length === 0 ? <p className="muted">No hay usuarios para los filtros actuales.</p> : null}
             {users.items.map((item) => (
               <UserRowEditor
                 item={item}
