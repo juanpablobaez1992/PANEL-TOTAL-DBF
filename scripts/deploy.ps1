@@ -45,6 +45,6 @@ if ($Logs) {
 
 $remoteScript = $remoteCommands -join "; "
 
-Invoke-Step "Deploying to $HostAlias:$RemotePath" {
+Invoke-Step "Deploying to ${HostAlias}:$RemotePath" {
     ssh $HostAlias $remoteScript
 }
