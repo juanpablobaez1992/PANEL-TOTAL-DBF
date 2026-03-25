@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import logging
+
 import httpx
 
 from app.config import settings
 from app.utils.json_tools import normalize_json_text
+
+logger = logging.getLogger(__name__)
 
 BASE_PROMPT = """
 Actua como un copywriter senior especializado en redes sociales y periodismo digital.
@@ -132,5 +136,6 @@ async def generate_copies(
     )
     try:
         return await _call_gemini(prompt)
-    except Exception:
+    except Exception as error:  # noqa: BLE001
+        logger.warning("Gemini fallo, usando Claude como fallback. Error: %s", error)
         return await _call_claude(prompt)

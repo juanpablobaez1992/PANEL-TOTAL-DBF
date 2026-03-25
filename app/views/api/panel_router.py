@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
-_limiter = Limiter(key_func=get_remote_address)
+from app.utils.limiter import panel_limiter as _limiter
 
 from app.controllers import (
     auth_controller,

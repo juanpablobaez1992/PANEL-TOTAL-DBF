@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.controllers.panel_user_controller import seed_admin_user
+from app.utils.limiter import panel_limiter
 from app.controllers.canal_controller import migrate_legacy_channel_configs, seed_default_canales
 from app.database import Base, SessionLocal, engine
 from app.models.enums import RolPanel
@@ -47,6 +48,8 @@ async def lifespan(app: FastAPI):
     """Inicializa recursos al arrancar la aplicación."""
 
     _ = app
+    # Resetear rate limiter al iniciar (importante en tests para aislar entre instancias)
+    panel_limiter._storage.reset()
     settings.upload_path.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
     ensure_database_schema(engine)
@@ -137,5 +140,6 @@ def create_app() -> FastAPI:
     app.include_router(panel_router)
     app.include_router(automation_router)
     app.include_router(webhook_router)
+    settings.upload_path.mkdir(parents=True, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=settings.upload_path), name="uploads")
     return app

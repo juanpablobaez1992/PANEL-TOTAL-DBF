@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -452,8 +455,8 @@ async def process_due_jobs(db: Session) -> list[str]:
         db.commit()
         try:
             await run_regular_now(db)
-        except Exception:
-            pass
+        except Exception as error:  # noqa: BLE001
+            logger.exception("Error en job regular de automation: %s", error)
         executed.append("regular")
 
     if state.evergreen_enabled and state.evergreen_next_run_at and state.evergreen_next_run_at <= now:
@@ -474,8 +477,8 @@ async def process_due_jobs(db: Session) -> list[str]:
                     is_evergreen=True,
                 ),
             )
-        except Exception:
-            pass
+        except Exception as error:  # noqa: BLE001
+            logger.exception("Error en job evergreen de automation: %s", error)
         executed.append("evergreen")
 
     return executed

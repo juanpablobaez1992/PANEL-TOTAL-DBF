@@ -141,14 +141,34 @@ async def _dispatch_publicacion(publicacion: Publicacion) -> dict[str, str | boo
     return {"id": None, "url": None, "exito": False, "error": "Canal no soportado."}
 
 
+_RETRYABLE_ERRORS = ("timeout", "connection", "connect", "network", "temporar", "503", "502", "429")
+
+
+def _es_error_reintentable(error_msg: str | None) -> bool:
+    """Determina si un error es transitorio y merece reintento."""
+
+    if not error_msg:
+        return False
+    lower = error_msg.lower()
+    return any(keyword in lower for keyword in _RETRYABLE_ERRORS)
+
+
 async def _dispatch_con_reintentos(publicacion: Publicacion) -> dict[str, str | bool | None]:
-    """Intenta publicar con hasta 3 reintentos ante errores transitorios."""
+    """Intenta publicar con hasta 3 reintentos solo ante errores transitorios de red."""
 
     last_result: dict[str, str | bool | None] = {"id": None, "url": None, "exito": False, "error": "Sin intentos"}
     for attempt, delay in enumerate((*_RETRY_DELAYS, None), start=1):
         last_result = await _dispatch_publicacion(publicacion)
         if last_result["exito"]:
             return last_result
+        # Solo reintentar si el error parece transitorio (red, timeout, rate limit)
+        if not _es_error_reintentable(str(last_result.get("error") or "")):
+            logger.warning(
+                "Publicación %d falló con error permanente (sin reintento): %s",
+                publicacion.id,
+                last_result.get("error"),
+            )
+            break
         if delay is None:
             break
         logger.warning(
@@ -161,9 +181,8 @@ async def _dispatch_con_reintentos(publicacion: Publicacion) -> dict[str, str | 
         )
         await asyncio.sleep(delay)
     logger.error(
-        "Publicación %d falló tras %d intentos. Error final: %s",
+        "Publicación %d falló definitivamente. Error: %s",
         publicacion.id,
-        len(_RETRY_DELAYS) + 1,
         last_result.get("error"),
     )
     return last_result
@@ -179,15 +198,22 @@ def _actualizar_estado_noticia(db: Session, noticia_id: int) -> None:
     publicaciones = list(
         db.scalars(select(Publicacion).where(Publicacion.noticia_id == noticia.id))
     )
-    if publicaciones and all(
-        pub.estado in {EstadoPublicacion.publicado, EstadoPublicacion.omitido}
-        for pub in publicaciones
-    ):
+    if not publicaciones:
+        db.commit()
+        return
+
+    # Si hay publicaciones aún pendientes, no cambiar estado todavía
+    has_pending = any(pub.estado == EstadoPublicacion.pendiente for pub in publicaciones)
+    if has_pending:
+        db.commit()
+        return
+
+    # Todas procesadas (publicado, omitido, error)
+    if all(pub.estado in {EstadoPublicacion.publicado, EstadoPublicacion.omitido} for pub in publicaciones):
         noticia.estado = EstadoNoticia.publicado
         noticia.programada_para = None
-    elif any(pub.estado == EstadoPublicacion.publicado for pub in publicaciones):
-        noticia.estado = EstadoNoticia.error
-    elif publicaciones and all(pub.estado == EstadoPublicacion.error for pub in publicaciones):
+    else:
+        # Alguna falló (puede haber mix de publicado+error, o todo error)
         noticia.estado = EstadoNoticia.error
     db.commit()
 
